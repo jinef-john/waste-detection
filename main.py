@@ -331,7 +331,10 @@ class SmartTrashSystem:
                 return
             
             uptime_hours = (time.time() - self.start_time) / 3600.0
-            batch_stats = self.batch_tracker.get_statistics()
+            batch_stats = self.batch_tracker.get_statistics() if self.batch_tracker else {
+                'total_batches_completed': 0,
+                'total_weight_tracked_kg': 0.0
+            }
             
             self.logger.info(
                 f"Final Stats - Runtime: {uptime_hours:.2f}h, "
@@ -418,7 +421,11 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
 
 def signal_handler(signum, frame):
     """Handle shutdown signals"""
-    print("\nReceived shutdown signal. Stopping system...")
+    try:
+        print("\nReceived shutdown signal. Stopping system...")
+    except BrokenPipeError:
+        # Ignore broken pipe errors when output is redirected
+        pass
     global system
     if system:
         system.stop()
@@ -427,6 +434,13 @@ def signal_handler(signum, frame):
 
 def main():
     """Main entry point"""
+    # Handle broken pipe errors gracefully when output is redirected
+    try:
+        signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    except AttributeError:
+        # SIGPIPE not available on all platforms (e.g., Windows)
+        pass
+    
     parser = argparse.ArgumentParser(description="Smart Trash Detection System")
     parser.add_argument('--config', '-c', help='Configuration file path')
     parser.add_argument('--simulate', '-s', action='store_true', 
@@ -461,10 +475,14 @@ def main():
     system = SmartTrashSystem(config)
     
     try:
-        print("Starting Smart Trash Detection System...")
-        print(f"Camera source: {config['camera']['source']}")
-        print(f"Batch duration: {config['batch_tracking']['duration_minutes']} minutes")
-        print("Press Ctrl+C to stop")
+        try:
+            print("Starting Smart Trash Detection System...")
+            print(f"Camera source: {config['camera']['source']}")
+            print(f"Batch duration: {config['batch_tracking']['duration_minutes']} minutes")
+            print("Press Ctrl+C to stop")
+        except BrokenPipeError:
+            # Ignore broken pipe errors when output is redirected
+            pass
         
         system.start()
         
@@ -475,13 +493,23 @@ def main():
             # Optional: Print periodic status
             if system.detection_count > 0 and system.detection_count % 60 == 0:
                 status = system.get_status()
-                print(f"Status: {status['detection_count']} detections, "
-                      f"uptime: {status['uptime_hours']:.1f}h")
+                try:
+                    print(f"Status: {status['detection_count']} detections, "
+                          f"uptime: {status['uptime_hours']:.1f}h")
+                except BrokenPipeError:
+                    # Ignore broken pipe errors when output is redirected
+                    pass
     
     except KeyboardInterrupt:
-        print("\nShutdown requested by user")
+        try:
+            print("\nShutdown requested by user")
+        except BrokenPipeError:
+            pass
     except Exception as e:
-        print(f"System error: {e}")
+        try:
+            print(f"System error: {e}")
+        except BrokenPipeError:
+            pass
     finally:
         if system:
             system.stop()
