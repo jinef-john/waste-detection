@@ -26,26 +26,29 @@ Real-time waste detection and classification using:
 
 ## 🚀 Quick Start
 
-### 1. Installation
+### 1. Raspberry Pi Setup
 ```bash
-git clone <repository-url>
-cd smart-trash
-pip install -r requirements.txt
+# Download and run setup script
+wget https://your-repo/scripts/install_pi.sh
+chmod +x install_pi.sh
+sudo ./install_pi.sh
+
+# Copy your project files to /home/pi/smart-trash/
 ```
 
 ### 2. Run System
 ```bash
-# Live camera
-python main.py
+# Start normally
+./scripts/run.sh
 
-# Video file
-python main.py --video data/samples/trash.mp4
+# Test with simulation
+./scripts/run.sh --simulate
 
-# Mixed content (trash + fruits)
-python main.py --video data/samples/fruitrash.mp4
+# Run with video file
+./scripts/run.sh --video data/samples/trash.mp4
 
 # Debug mode
-python main.py --debug
+./scripts/run.sh --debug
 ```
 
 ### 3. View Results
@@ -81,6 +84,9 @@ python main.py --confidence 0.6
 ```
 smart-trash/
 ├── main.py                     # Main application
+├── scripts/
+│   ├── install_pi.sh           # Pi setup script
+│   └── run.sh                  # Run script
 ├── waste/
 │   ├── camera_interface.py     # Camera/video handling
 │   ├── models/
